@@ -1,0 +1,20 @@
+@startuml
+participant Client
+participant Server
+
+Client -> Server : Make Async Request
+note left of Client : Client is spinning
+activate Server
+note right of Server : Server is running the callback
+--> Client : Incoming Event A
+activate Client
+deactivate Client
+Server --> Client : Return Response
+deactivate Server
+
+activate Client
+note left of Client : Client is running receive callback
+Client -[#white]> Client : 
+deactivate Client
+
+@enduml
