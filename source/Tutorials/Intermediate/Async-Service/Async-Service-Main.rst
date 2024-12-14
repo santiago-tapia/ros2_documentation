@@ -419,7 +419,7 @@ Installing the examples directly
 
 You might get the packages directly from code sources (clone the git
 repository in a workspace and colcon build them) or if you
-are using Ubuntu and you follow the `installation instructions <https://docs.ros.org/en/{REPOS_FILE_BRANCH}/Installation/Ubuntu-Install-Binary.html>`,
+are using Ubuntu and you follow the `installation instructions <https://docs.ros.org/en/{REPOS_FILE_BRANCH}/Installation.html>`,
 you can install them using apt for your ROS 2 distro:
 
 .. code-block:: bash
@@ -436,7 +436,7 @@ interact and the impact of execution timing on their interaction.
 Discover available components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To see what packages that contains `examples_` are registered and available
+To see what packages that contains *examples_* are registered and available
 in your workspace, execute the following command in a terminal:
 
 .. code-block:: bash
@@ -444,7 +444,7 @@ in your workspace, execute the following command in a terminal:
    ros2 pkg list | grep examples_
 
 The terminal will show a list of packages from ros2_examples, actually,
-the list of packages whose name starts with `examples_`. At least you
+the list of packages whose name starts with *examples_*. At least you
 should get:
 
 .. code-block:: text
@@ -499,7 +499,7 @@ Start a new terminal and run (source the workspace, if you have to):
    ros2 ros2 run examples_rclcpp_async_recv_cb_client client_main
 
 This node does not make a request upon launch. Instead, the service call 
-is made when a topic is received. That is, the call to `async_send_request`
+is made when a topic is received. That is, the call to ``async_send_request``
 is **inside** a ROS2 callback. To trigger the request, you need to publish
 to a topic. Open a third terminal and run:
 
