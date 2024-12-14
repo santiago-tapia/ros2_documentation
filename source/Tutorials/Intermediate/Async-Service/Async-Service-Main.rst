@@ -3,14 +3,14 @@
    Async-Service
    Tutorials/Async-Service
 
-Writing a service with an asyncronous client node
+Writing a service with an asynchronous client node
 ==================================================
 
 .. contents:: Table of Contents
    :depth: 2
    :local:
 
-**Goal:** Understanding asyncronism in the context of services.
+**Goal:** Understanding asynchronism in the context of services.
 
 **Tutorial level:** Intermediate
 
@@ -408,6 +408,7 @@ line and logged. Afterward, the response can be processed as needed. In this
 example, it is simply published to a topic.
 
 .. note::
+   
    Compared to the code of a hypothetical synchronous client, the key
    difference lies in where the code to be executed *after* obtaining
    the result is placed. In a synchronous call, it is written directly
@@ -489,7 +490,7 @@ You might fine tune the timing by running:
 With 2.5 as the new delay in seconds, keep this value to ensure sufficient
 time for the subsequent steps.
 
-Run the asyncronous client
+Run the asynchronous client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Start a new terminal and run (source the workspace, if you have to):
@@ -543,13 +544,6 @@ Check the client terminal; you should see output similar to the following:
    [INFO] [1733332219.403816764] [examples_rclcpp_async_recv_cb_client]: Response: 110
    [INFO] [1733332221.904430291] [examples_rclcpp_async_recv_cb_client]: Response: 115
 
-Since the client **is** asyncronous, it keeps spinning, and thus receiving
-topic messages, in the previous logs the topics for 10 and 15 were received at
-a time ending in 16 and 18 seconds respectively, and the responses were received
-later. That is, two request were done in a row before getting the results and
-later they were also received one after the other. But, why the second response
-takes more that 2.5 seconds?
-
 Since the client **is** asynchronous, it keeps spinning and continues to
 receive topic messages. In the previous logs, the topics for 10 and 15 were
 received at times ending in 16 and 18 seconds, respectively, and the responses
@@ -566,10 +560,6 @@ to the following:
    [INFO] [1733332219.403276302] [delayed_service]: Response: 110
    [INFO] [1733332219.403700193] [delayed_service]: Request:15 + 100 delayed 2.5 seconds
    [INFO] [1733332221.903918827] [delayed_service]: Response: 115
-
-The server logs a message in its service callback, the client made the second
-call at a time whose seconds are 18.45, but the message here is logged at 19.40,
-what happens?
 
 The server logs a message in its service callback. The client made the second
 call at a time ending in 18.45 seconds, but the server logs the corresponding
@@ -605,10 +595,6 @@ efficiency in generating responses to avoid overwhelming it.
    In any circumstance, it is advisable to monitor callback execution times,
    as they **block** spinning and can lead to unexpected and undesirable
    side effects.
-
-Just as a final note: programming a service server that takes too long in
-computing the response is a potential issue in your system, this inconvenience
-is a reason for using actions (among others).
 
 As a final note, designing a service server that takes too long to
 compute a response can become a significant issue in your system. This
