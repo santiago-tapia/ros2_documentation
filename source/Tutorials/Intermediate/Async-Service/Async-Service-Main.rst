@@ -22,9 +22,10 @@ Background
 For information on how to write a basic client/server service see 
 :doc:`checkout this tutorial <../../Beginner-Client-Libraries/Writing-A-Simple-Cpp-Service-And-Client>`.
 
-**All** service clients in ROS2 are **asyncronous**, in this tutorial an example of service client is 
-studied to provide some insight of that fact while explaining the reason for being asyncronous and some
-consequences about timing. 
+**All** service **clients** in ROS2 are **asynchronous**. In this tutorial, an example
+of a service client is analyzed to provide insight into this fact, explaining
+the reasons for its asynchronous nature and some of the timing-related
+consequences.
 
 Consider the following diagram: 
 
@@ -32,39 +33,42 @@ Consider the following diagram:
    :target: images/sync-client-diagram.png
    :alt: A sequence diagram that show how a sync-client waits for the response
 
-It shows an syncronous client, the client makes a request and waits for the response, that is, 
-its thread is not running, it is stopped until the response is returned.
+It shows a **synchronous** client. The client makes a request and waits for
+the response, meaning its thread is not running but blocked until the
+response is returned.
 
-On the other hand, in the following diagram an asyncronous ROS2 client is showed:
+In contrast, the following diagram illustrates an asynchronous ROS2 client:
 
 .. In the definition diagram there is an invisible interaction, in white color, otherwise the activation bar could not be deactivated.
-
 
 .. image:: images/async-client-diagram.png
    :target: images/async-client-diagram.png
    :alt: A sequence diagram that show how a async-client is not waiting but doing something else
 
 
-In general, an asyncronous client is running after making the request, of course, it could
-be stopped by invoking a waiting function or at any other blocking function, but this 
-diagram shows a ROS2 client, and, in ROS2 in order to get the response, the thread has to
-be spinning, that is: it has to be waiting for any incoming events (topics, timers...) 
-including the response event. This fact is showed in the diagram: when the ``Event A`` is received,
-its callback is executed (the client is *activated*) and, afterwards, the response is 
-received and the client executes the callback for the response. 
+In general, an asynchronous client continues running after making the request.
+Of course, it could be stopped by invoking a waiting function or another
+blocking function, but this diagram shows a ROS2 client, and in ROS2, to receive
+the response, the thread must be spinning, meaning it has to poll for incoming
+events (topics, timers, etc.), including the response event. This behavior is
+depicted in the diagram: when ``Event A`` is received, its callback is executed
+(the client is *activated*), and afterward, the response is received, and the
+client executes the callback for the response.
 
-Since any service client in ROS2 needs to be spinning to receive the response for the 
-server. That means that **all clients in ROS2 are asyncronous** by design (they can not be
-*just waiting*, they can wait while spinning).
+Since any service client in ROS2 needs to be spinning to receive the server's
+response, all clients in ROS2 are asynchronous by design (they cannot simply
+wait; they can only wait while spinning).
 
-Thus, if a node **is** already **spinning** and has requested a service
-**inside** a callback (any callback), the best approach is just let the callback finish,
-you can process the response later in another callback in the future. You might find that
-this approach is not obvious because the code to be executed after receiving the response
-is not write inmediately after making the request, but you will get use to it, it
-is just to write or look for that piece of code somewhere else.
+Thus, if a node is already spinning and has requested a service inside a
+callback (any callback), the best approach is to let the callback finish.
+You can process the response later in another callback in the future. This
+approach might seem unintuitive because the code to be executed after
+receiving the response is not written immediately after making the request.
+However, you will get used to it; you just need to write or locate that
+piece of code elsewhere.
 
-This tutorial shows how to write an asyncronous client that works like in the diagram.
+This tutorial demonstrates how to write an asynchronous client that
+operates as shown in the diagram.
 
 Prerequisites
 -------------
@@ -184,17 +188,18 @@ And build as usual:
 1.2 Examine the server code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. Note::
+.. warning::
 
-   This package is NOT a real service server example, but an
-   instrument to experiment and understand the consecuences of
-   timing in services. It includes an artificial and **unnecessary**
-   delay in responding the requests. Nevertheless, it could be
-   used as an example if you remove the delay.
+   This package is NOT a real service server example but rather an
+   instrument to experiment with and understand the consequences of
+   timing in services. It includes an artificial and unnecessary
+   delay in responding to requests. Nevertheless, it could
+   serve as an example if the delay is removed.
 
-Actually, there is no relevant items here. Only note that the
-callback that attends the request is slept for a given amount of
-seconds. The rest of the node is quite standard.
+Actually, there are no particularly relevant elements here. The main
+point to note is that the callback handling the request is intentionally
+delayed for a specified number of seconds. The rest of the node follows
+a standard implementation.
 
 2 Creating the client package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -355,28 +360,30 @@ the request is made here, **inside** this callback:
       }
    }
 
-This callback check the topic value and, if greater or equals to zero, prepare a request to
-the service using the new topic value and `100` as arguments, and make the request itself.
+This callback checks the topic value and, if it is greater than or equal to
+zero, prepares a request to the service using the new topic value and 100 as
+arguments, and then sends the request.
 
-The important items about ``async_send_request`` are:
+Key points about ``async_send_request`` are:
 
-* It is called inside a callback, that is, it is executed in the thread that
+* It is called inside a callback, meaning it is executed in the thread that
   is spinning the node.
 
-* It is not blocking, that is, it will return almost inmediately. So it will
-  not block the execution of the thread.
+* It is non-blocking, meaning it returns almost immediately without stopping
+  the execution of the thread.
 
-* It provides a callback as an argument, ``AsyncReceiveCallbackClient::handle_service_response``,
-  that is where the code will *jump* when the response is received.
+* It accepts a callback as an argument, ``handle_service_response``, which is 
+  where the code will *jump* when the response is received.
 
-* There is **not** any other sentence after it in ``topic_callback``, so the
-  execution will leave this callback and return to the spinning method.
+* There are no additional statements after the call to ``async_send_request`` 
+  in ``topic_callback``, so execution will exit this callback and return
+  to the spinning method.
 
-* Just remember, in order to receive the response the node should be spinning.
+* Keep in mind that the node must be spinning to receive the server response.
 
-* The ``future_result`` object could be ignored because it will be received
-  at ``handle_service_response``, but you might use it to track the
-  *state* of the request if necessary.
+* The ``future_result`` object can be ignored since the response will be
+  handled in ``handle_service_response`` using the argument. However, it can
+  also be used to track the *state* of the request if necessary.
 
 The second callback is for receiving the server response. Note that,
 being a callback, it will be executed at the spinning thread. The code is
@@ -396,15 +403,16 @@ quite simple:
     publisher_->publish(result_msg);
   }
 
-The response is given in the parameter, `future`, it is obtained in the first
-line and logged. Then, the response could be processed as required, here, just
-as an example, it is published in a topic.
+The response is provided in the parameter future. It is retrieved in the first
+line and logged. Afterward, the response can be processed as needed. In this
+example, it is simply published to a topic.
 
 .. note::
-
-   Compare to the code of an hypotethical alternative syncronous client the difference is where the code
-   to be executed *after* getting the result is written. In a syncronous call it is right *after*
-   the sentence calling the request, while in an asyncronous request it is at **another callback**.
+   Compared to the code of a hypothetical synchronous client, the key
+   difference lies in where the code to be executed *after* obtaining
+   the result is placed. In a synchronous call, it is written directly
+   *after* the line that makes the request. In an asynchronous call, however,
+   it is located in **another callback**.
 
 Installing the examples directly
 ---------------------------------
@@ -421,9 +429,9 @@ you can install them using apt for your ROS 2 distro:
 Study how client and server interact
 ------------------------------------
 
-Whatever you write the package or install directly the example, this section
-provides some cases of study to show how client and serve interact with each
-other and the impact of time execution in that interaction.
+Whether you write the package yourself or directly install the example, this
+section provides cases of study to illustrate how the client and server
+interact and the impact of execution timing on their interaction.
 
 Discover available components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -444,7 +452,7 @@ should get:
    examples_rclcpp_async_recv_cb_client
    examples_rclcpp_delayed_service
 
-Just remember to source the workspace if you don't.
+Just remember to source the workspace if you haven't already.
 
 Run the delayed server
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -461,16 +469,16 @@ The service will start, in another terminal run:
 
    ros2 service call /add_two_ints example_interfaces/srv/AddTwoInts "{a: 2, b: 5}"
 
-After a short delay you will get the response, return to the terminal
-where you launch the server, you will have there two INFO log messages
-showing the time at the incoming request and the time when the response
+After a short delay, you will receive the response. Return to the terminal
+where you launched the server, and you will see two INFO log messages
+indicating the time of the incoming request and the time when the response
 was sent.
 
 .. note::
 
-   As already said, this server is designed NOT to be an example, but an
-   emulator of a service that will take a significant amount of time to
-   compute the response.
+   As mentioned earlier, this server is designed NOT to serve as a standard
+   example but as an emulator of a service that requires a significant
+   amount of time to compute a response.
 
 You might fine tune the timing by running:
 
@@ -478,8 +486,8 @@ You might fine tune the timing by running:
 
    ros2 param set /delayed_service response_delay 2.5
 
-Being 2.5 the new delay in seconds. Kept that value as the delay to have
-plenty of time to run next steps.
+With 2.5 as the new delay in seconds, keep this value to ensure sufficient
+time for the subsequent steps.
 
 Run the asyncronous client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -490,41 +498,41 @@ Start a new terminal and run (source the workspace, if you have to):
 
    ros2 ros2 run examples_rclcpp_async_recv_cb_client client_main
 
-This node doesn't make a request on launching, instead the call for service
-is done when a topic is received, that is, the call to `async_send_request`
-is **inside** a ros2 callback. So you have to trigger the request by publishing
-to a topic, start a third terminal and run:
+This node does not make a request upon launch. Instead, the service call 
+is made when a topic is received. That is, the call to `async_send_request`
+is **inside** a ROS2 callback. To trigger the request, you need to publish
+to a topic. Open a third terminal and run:
 
 .. code-block:: bash
 
    ros2 topic pub --once /input_topic std_msgs/msg/Int32 "data: 5"
 
-Check the messages in both terminals, the one for the server and the one
-for the client. You will find that, as you did manually before, the client made
-a request and a bit later it received the response. On the server side
-you will see exactly the same messages, no news there.
+Check the messages in both terminals: one for the server and one
+for the client. You will observe that, as before, the client made a request
+and received the response shortly afterward. On the server side,
+you will see the same messages, confirming the interaction.
 
-Now, Why is this client asyncronous? Being asyncronous means that the
-program is not stopped waiting for a result, insteads it keeps running
-doing other things while waiting for the response. Actually, this is
-the case of **all** ROS2 service clients because they all have to keep
-spinning to keep the incoming response from the rclcpp layer.
+Now, why is this client asynchronous? Being asynchronous means that the
+program does not stop and wait for a result. Instead, it continues running
+and performing other tasks while waiting for the response. This is
+true for **all** ROS2 service clients because they must keep
+spinning to handle incoming responses from the `rclcpp` layer.
 
 .. note::
 
-   In this example, the client is the part that is asyncronous. Applying the
-   term asyncronous to the server doesn't make any sense in this example.
+   In this example, the client is the asynchronous node. Applying the
+   term asynchronous to the server in this context does not make sense.
 
-Let's try to see it in action, just run these commands one after the
-other (if you are not fast enough, just set the delay time to a higher
-value), copy-paste them to your terminal will also work:
+Let's see this in action. Run the following commands one after the
+other. If you're not fast enough, you can increase the delay time to a
+higher value. Copy-pasting the commands into your terminal will also work:
 
 .. code-block:: bash
 
    ros2 topic pub --once /input_topic std_msgs/msg/Int32 "data: 10"
    ros2 topic pub --once /input_topic std_msgs/msg/Int32 "data: 15"
 
-Check the client terminal, you will get something similar to:
+Check the client terminal; you should see output similar to the following:
 
 .. code-block:: text
 
@@ -542,7 +550,15 @@ later. That is, two request were done in a row before getting the results and
 later they were also received one after the other. But, why the second response
 takes more that 2.5 seconds?
 
-Check now the terminal that runs the server, you will see something similar to:
+Since the client **is** asynchronous, it keeps spinning and continues to
+receive topic messages. In the previous logs, the topics for 10 and 15 were
+received at times ending in 16 and 18 seconds, respectively, and the responses
+were received later. This means two requests were made in quick succession
+before their results were received, and the responses were processed later.
+But why does the second response take more than 2.5 seconds?
+
+Now check the terminal running the server; you should see output similar
+to the following:
 
 .. code-block:: text
 
@@ -555,45 +571,58 @@ The server logs a message in its service callback, the client made the second
 call at a time whose seconds are 18.45, but the message here is logged at 19.40,
 what happens?
 
-Actually, it is very simple, the server is spinning, just like any other node
-and this server only has one thread, so the first callback, the one with
-arguments 10+100 **blocks** the spinning thread until it completes and returns.
-Then the spinning takes control again, looks for another incoming request and
-calls again the callback method with the new arguments: 15+100. Even if we
-might think on them as parallel requests, that is not true, if a
-**Single-Threaded Executor** is used, only one thread is used and, thus, the
-callback are executed strictly in sequence.
+The server logs a message in its service callback. The client made the second
+call at a time ending in 18.45 seconds, but the server logs the corresponding
+message at 19.40 seconds. What happens here?
 
-The key concept here is that an asyncronous call, like in the client,
-does not **block** execution, so the spinning in the client gets the control again after processing the 
-callback with the request inside, that way it can execute the callback for other incoming
-messages, including other topic messages **and** the incoming responses.
-The client node is also run by a Single-Threaded Executor, so, callbacks are
-also processed in sequence. The difference is that the callbacks in the client
-return almost inmediately and so, apparently, the client is always ready.
+It is actually quite simple. The server is spinning, just like any other node,
+and this server only has one thread. Therefore, the first callback, which
+processes the request with arguments 10+100, **blocks** the spinning thread
+until it completes and returns. Once it finishes, the spinning resumes,
+processes the next incoming request, and calls the callback method with the
+new arguments: 15+100. While it might seem like the requests are handled in
+parallel, that is not the case. When a **Single-Threaded Executor** is used,
+only one thread is available, and the callbacks are executed strictly in
+sequence.
 
-Another lesson here is that you should make service requests with caution, if you
-make requests at a high frequency you should be aware of the efficiency of your server to 
-produce the responses. 
+The key concept here is that an asynchronous call, like in the client,
+does not **block** execution. As a result, after processing the callback
+containing the request, the client regains control and continues spinning.
+This allows it to execute callbacks for other incoming messages, including
+topic messages **and** incoming responses. 
+
+The client node also uses a **Single-Threaded Executor**, so callbacks
+are processed sequentially. However, the difference is that callbacks in
+the client return almost immediately. This gives the appearance that the
+client is always ready to process new events.
+
+Another important lesson is that service requests should be made with caution.
+If you make requests at a high frequency, you must consider the server's
+efficiency in generating responses to avoid overwhelming it.
 
 .. note::
 
-   Actually, in any circumstance, it is a good idea to check callback execution
-   times, since they **block** spinning and could produce unexpected and
-   unwanted side-effects.
+   In any circumstance, it is advisable to monitor callback execution times,
+   as they **block** spinning and can lead to unexpected and undesirable
+   side effects.
 
 Just as a final note: programming a service server that takes too long in
 computing the response is a potential issue in your system, this inconvenience
 is a reason for using actions (among others).
 
+As a final note, designing a service server that takes too long to
+compute a response can become a significant issue in your system. This
+limitation is one of the reasons why using actions is often preferred
+in such cases.
+
 Summary
 --------
 
-You have create an asyncronous client node using a design that could be
-used in combination with other events in ROS2: topics, timer, etc. Its
-execution model is quite simple since the node is just executed in the
+You have created an **asynchronous** client node using a design that
+can be integrated with other ROS2 events, such as topics, timers, etc. Its
+execution model is straightforward, as the node operates in the
 default mode (single-threaded).
 
-You have made some experiments about timing and the impact of
-blocking callbacks and you should now understand better the meaning
-of asyncronism and its impact in code design.
+You have conducted experiments on timing and the effects of
+blocking callbacks, which should help you better understand the
+concept of **asynchronism** and its impact on code design.
