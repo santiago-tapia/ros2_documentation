@@ -45,7 +45,7 @@ The commonly-used unit quaternion that yields no rotation about the x/y/z axes i
 
 .. code-block:: C++
 
-   #include <tf2/LinearMath/Quaternion.h>
+   #include <tf2/LinearMath/Quaternion.hpp>
    ...
 
    tf2::Quaternion q;
