@@ -1,4 +1,3 @@
-.. Tutorials/Intermediate/Async-Service
 
 Writing a service with an asynchronous client node
 ==================================================
@@ -32,9 +31,18 @@ In this tutorial, the client will execute a callback when the response is receiv
 
 Consider the following diagram:
 
-.. image:: images/sync-client-diagram.png
-   :target: images/sync-client-diagram.png
-   :alt: A sequence diagram that show how a sync-client waits for the response
+.. mermaid::
+
+   sequenceDiagram
+      participant Client
+      participant Server
+
+      Client ->> Server : Send Sync Request
+      activate Server
+      Note left of Client: Waiting for Response
+      Server -->> Client : Return Response
+      deactivate Server
+
 
 It shows a **synchronous** client.
 The client makes a request and waits for the response, meaning its thread is blocked (i.e. not running) until the response is returned.
@@ -43,9 +51,29 @@ In contrast, the following diagram illustrates an asynchronous ROS 2 client:
 
 .. In the definition diagram there is an invisible interaction, in white color, otherwise the activation bar could not be deactivated.
 
-.. image:: images/async-client-diagram.png
-   :target: images/async-client-diagram.png
-   :alt: A sequence diagram that show how a async-client is not waiting but doing something else
+.. mermaid::
+
+   sequenceDiagram
+
+   participant Other
+   participant Client
+   participant Server
+
+   Client ->> Server : Send Async Request
+   Note left of Client: Client is spinning
+   activate Server
+   Note right of Server: Server is running the callback
+   Other ->> Client : Incoming Event A
+   activate Client
+   Note left of Client: Client is running Event A callback
+   deactivate Client
+   Note left of Client: Client is spinning
+   Server -->> Client : Return Response
+   deactivate Server
+   activate Client
+   Note left of Client: Client is running receive callback
+   deactivate Client
+   Note left of Client: Client is spinning
 
 
 In general, an asynchronous client continues running after making the request.
