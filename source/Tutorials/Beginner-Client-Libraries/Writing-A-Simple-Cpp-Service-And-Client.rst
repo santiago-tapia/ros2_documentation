@@ -245,7 +245,11 @@ Inside the ``ros2_ws/src/cpp_srvcli/src`` directory, create a new file called ``
   int main(int argc, char * argv[])
   {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<MinimalClient>());
+    try {
+      auto node = std::make_shared<MinimalClient>();
+      rclcpp::spin(node);
+    } catch (...) {
+    }
     rclcpp::shutdown();
     return 0;
   }
@@ -263,7 +267,8 @@ Then, the code waits for the service to appear.
 
 The ``while`` loop gives the client 1 second to search for service nodes in the network.
 If it can't find any, it will continue waiting.
-If the client is canceled (e.g. by you entering ``Ctrl+C`` into the terminal), it will return an error log message stating it was interrupted.
+If the client is canceled (e.g. by you entering ``Ctrl+C`` into the terminal), it logs a message indicating the interruption and raises an exception to exit.
+
 
 .. code-block:: C++
 
@@ -271,7 +276,7 @@ If the client is canceled (e.g. by you entering ``Ctrl+C`` into the terminal), i
   while (!client_->wait_for_service(std::chrono::seconds(1))) {
     if (!rclcpp::ok()) {
       RCLCPP_ERROR(this->get_logger(), "client interrupted while waiting for service to appear.");
-      throw 1;
+      throw std::runtime_error("client interrupted while waiting for service to appear");
     }
     RCLCPP_INFO(this->get_logger(), "waiting for service to appear...");
   }
@@ -330,7 +335,25 @@ Finally, the timer is created:
 
   timer_ = this->create_wall_timer(500ms, timer_callback);
 
-The main function follows the standard implementation: it simply creates the node and starts spinning.
+The main function initializes rclcpp, creates the node, and starts spinning.
+
+Since the node constructor may throw an exception, a try/catch block is used for handling it.
+This exception occurs when the user signals the program to exit, so no additional action is needed, allowing the program to terminate naturally.
+
+.. code-block:: C++
+
+  int main(int argc, char * argv[])
+  {
+    rclcpp::init(argc, argv);
+    try {
+      auto node = std::make_shared<MinimalClient>();
+      rclcpp::spin(node);
+    } catch (...) {
+    }
+    rclcpp::shutdown();
+    return 0;
+  }
+
 
 3.2 Add executable
 ~~~~~~~~~~~~~~~~~~
